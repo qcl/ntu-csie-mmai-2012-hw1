@@ -10,7 +10,7 @@
 # read frame image, then calculate RGB, HSV, YIQ histogram, 
 # then output as files
 #
-import sys,os,math
+import sys,os,math,copy
 import Image,colorsys
 
 def main(path,start,end):
@@ -30,9 +30,38 @@ def main(path,start,end):
     last_rgb_h = None
     last_hsv_h = None
     last_yiq_h = None
+    
+    # RGB histogram initialize
+    rgb_h = []
+    for x in range(0,4):
+        rgb_h.append([])
+        for y in range(0,4):
+            rgb_h[x].append([])
+            for z in range(0,4):
+                rgb_h[x][y].append(0)
+
+    # HSV histogram initialize
+    hsv_h = []
+    for x in range(0,18):
+        hsv_h.append([])
+        for y in range(0,3):
+            hsv_h[x].append([])
+            for z in range(0,3):
+                hsv_h[x][y].append(0)
+
+    # YIQ histogram initialize
+    yiq_h = []
+    for x in range(0,12):
+        yiq_h.append([])
+        for y in range(0,3):
+            yiq_h[x].append([])
+            for z in range(0,3):
+                yiq_h[x][y].append(0)
+            
 
     for frame in range(start,end+1):
         filename = path+str(frame)+'.jpg'
+            
         
         if os.path.exists(filename):
             # read Image
@@ -44,33 +73,6 @@ def main(path,start,end):
 
             
 
-            # RGB histogram initialize
-            rgb_h = []
-            for x in range(0,4):
-                rgb_h.append([])
-                for y in range(0,4):
-                    rgb_h[x].append([])
-                    for z in range(0,4):
-                        rgb_h[x][y].append(0)
-
-            # HSV histogram initialize
-            hsv_h = []
-            for x in range(0,18):
-                hsv_h.append([])
-                for y in range(0,3):
-                    hsv_h[x].append([])
-                    for z in range(0,3):
-                        hsv_h[x][y].append(0)
-
-            # YIQ histogram initialize
-            yiq_h = []
-            for x in range(0,12):
-                yiq_h.append([])
-                for y in range(0,3):
-                    yiq_h[x].append([])
-                    for z in range(0,3):
-                        yiq_h[x][y].append(0)
-            
 
             # get pixel value from image
             image = image.convert('RGB')
@@ -97,9 +99,9 @@ def main(path,start,end):
                         s = 2
                     if v >= 3.0:
                         v = 2
-                    h = int(math.floor(h))
-                    s = int(math.floor(s))
-                    v = int(math.floor(v))
+                    h = int(h)
+                    s = int(s)
+                    v = int(v)
                     hsv_h[h][s][v] = hsv_h[h][s][v] + 1
 
                     # get Y,I,Q
@@ -113,51 +115,62 @@ def main(path,start,end):
                         I = 2
                     if Q >= 3.0:
                         Q = 2
-                    Y = int(math.floor(Y))
-                    I = int(math.floor(I))
-                    Q = int(math.floor(Q))
+                    Y = int(Y)
+                    I = int(I)
+                    Q = int(Q)
                     yiq_h[Y][I][Q] = yiq_h[Y][I][Q] + 1
 
             
             #Calculate L1 for RGB
             diff_rgb = 0
-            for x in range(0,4):
-                for y in range(0,4):
-                    for z in range(0,4):
-                        rgb_h_f.write(str(rgb_h[x][y][z])+',')
-                        if last_rgb_h!=None:
+            if last_rgb_h!=None:
+                for x in range(0,4):
+                    for y in range(0,4):
+                        for z in range(0,4):
+                            #rgb_h_f.write(str(rgb_h[x][y][z])+',')
+                            print last_rgb_h[x][y][z],rgb_h[x][y][z]
                             diff_rgb = diff_rgb + math.fabs(last_rgb_h[x][y][z]-rgb_h[x][y][z])
+                            last_rgb_h[x][y][z] = rgb_h[x][y][z]
+                            rgb_h[x][y][z] = 0
+                            
+
              
-            rgb_h_f.write("\n")
+            #rgb_h_f.write("\n")
             
             #Calculate L1 for HSV
             diff_hsv = 0
-            for x in range(0,18):
-                for y in range(0,3):
-                    for z in range(0,3):
-                        hsv_h_f.write(str(hsv_h[x][y][z])+',')
-                        if last_hsv_h!=None:
+            if last_hsv_h!=None:
+                for x in range(0,18):
+                    for y in range(0,3):
+                        for z in range(0,3):
+                            #hsv_h_f.write(str(hsv_h[x][y][z])+',')
                             diff_hsv = diff_hsv + math.fabs(last_hsv_h[x][y][z]-hsv_h[x][y][z])
+                            last_hsv_h[x][y][z] = hsv_h[x][y][z]
+                            hsv_h[x][y][z] = 0
              
-            hsv_h_f.write("\n")
+            #hsv_h_f.write("\n")
 
             #Calculate L1 for YIQ
             diff_yiq = 0
-            for x in range(0,12):
-                for y in range(0,3):
-                    for z in range(0,3):
-                        yiq_h_f.write(str(yiq_h[x][y][z])+',')
-                        if last_yiq_h!=None:
+            if last_yiq_h!=None:
+                for x in range(0,12):
+                    for y in range(0,3):
+                        for z in range(0,3):
+                            #yiq_h_f.write(str(yiq_h[x][y][z])+',')
                             diff_yiq = diff_yiq + math.fabs(last_yiq_h[x][y][z]-yiq_h[x][y][z])
+                            last_yiq_h[x][y][z] = yiq_h[x][y][z]
+                            yiq_h[x][y][z] = 0
              
-            yiq_h_f.write("\n")
+            #yiq_h_f.write("\n")
 
-            last_rgb_h = rgb_h
-            last_hsv_h = hsv_h
-            last_yiq_h = yiq_h
+            if last_rgb_h == None:
+                last_rgb_h = copy.deepcopy(rgb_h)
+                last_hsv_h = copy.deepcopy(hsv_h)
+                last_yiq_h = copy.deepcopy(yiq_h)
+                print last_rgb_h
 
             print filename,diff_rgb,diff_hsv,diff_yiq
-            diff_f.write(filename+'\t'+str(diff_rgb)+'\t'+str(diff_hsv)+'\t'+str(diff_yiq)+'\n')
+            #diff_f.write(filename+'\t'+str(diff_rgb)+'\t'+str(diff_hsv)+'\t'+str(diff_yiq)+'\n')
 
         else:
             print filename,'do not exist'
