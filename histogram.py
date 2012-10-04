@@ -7,7 +7,8 @@
 # MMAI 2012 Homework#1
 #
 # histogram.py 
-# read frame image, then calculate RGB, HSV, YIQ histogram, then output as files
+# read frame image, then calculate RGB, HSV, YIQ histogram, 
+# then output as files
 #
 import sys,os,math
 import Image,colorsys
