@@ -14,6 +14,8 @@ def main(difffile):
     df = open(difffile,'r')
 
     rgb_th = 30000
+    hsv_th = 60000
+    yiq_th = 25000
 
     for line in df:
         l = line.split('\t')
@@ -22,8 +24,27 @@ def main(difffile):
         hsv = int(l[2])
         yiq = int(l[3])
 
+        r = False
+        h = False
+        y = False
+
         if(rgb>rgb_th):
-            print frame
+            r = True
+        if(hsv>hsv_th):
+            h = True
+        if(yiq>yiq_th):
+            y = True
+
+        if r or h or y:
+            print frame,
+            if r:
+                print 'RGB',
+            if h:
+                print 'HSV',
+            if y:
+                print 'YIQ',
+            print ''
+            
 
 
 if __name__ == '__main__':
