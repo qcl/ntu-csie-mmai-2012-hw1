@@ -10,9 +10,8 @@
 #
 import sys,os,math
 
-def main(difffile,answer):
+def main(difffile):
     df = open(difffile,'r')
-    df = open(answer,'r')
 
     rgb_th = 30000
     hsv_th = 60000
@@ -49,8 +48,8 @@ def main(difffile,answer):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         print 'Usage:'
-        print 'python shot_detect.py diff_file_gen_by_histogram.py answer'
+        print 'python shot_detect.py diff_file_gen_by_histogram.py'
     else:
         main(sys.argv[1])
