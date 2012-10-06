@@ -9,144 +9,105 @@
 # shot_detect.py 
 #
 import sys,os,math
+import histogram
 
-def main(difffile,answer):
-    df = open(difffile,'r')
+def main(argv):
 
-    rgb_th = 20000
-    hsv_th = 38000
-    yiq_th = 20000
+    path = sys.argv[1]
+    start = int(sys.argv[2])
+    end = int(sys.argv[3])
+    color_space = sys.argv[4]
 
-    rgb = []
-    hsv = []
-    yiq = []
-    path = []
+    threshold = 40000
+    if len(sys.argv)>5:
+        threshold = int(sys.argv[5])
 
-    shot_h = []
-    shot_r = []
-    shot_y = []
+    # check cache
+    cache = False
+    if not os.path.exists(path+color_space+'_frameDiff'):
+        cache = True
 
-    cur_s_h = -1
-    cur_e_h = -1
+    # get frames difference
+    frames = histogram.getFramesDifference(path,start,end,color_space,cache)
 
-    cur_s_r = -1
-    cur_e_r = -1
+    if len(frames) != 2:
+        print 'no frames'
+        return
+    else:
+        frameDiff = frames['frameDiff']
+        frameID   = frames['frameID']
 
-    cur_s_y = -1
-    cur_e_y = -1
+    shot = []
+    windowSize = 5
+    status = 0      #NotFound
+    w = 0
 
-    ws = 5
+    startFrame = -1
+    endFrame = -1
 
-    for line in df:
-        l = line.split('\t')
-        path.append(l[0])
-        rgb.append(int(l[1]))
-        hsv.append(int(l[2]))
-        yiq.append(int(l[3]))
+    for i in range(0,len(frameDiff)):
+        if frameDiff[i] > threshold:
+            w = windowSize
+            endFrame = i
+            if status == 0:
+                status = 1
+                startFrame = i
+        else:
+            if status == 1:
+                if w > 0:
+                    w = w - 1
+                else:
+                    status = 0  #Find a transition!
+                    shot.append((startFrame,endFrame))
+    
+    # get the last transition
+    if status == 1:
+        shot.append((startFrame,endFrame))
+    
+    # calculate the real boundary
+    shotStart = [0]
 
-    for i in range(0,len(rgb)):
+    noChangeThreshold = 100
+
+    for transition in shot:
+        maxDiff = 0
+        maxDiffIndex = transition[0]
+        noChangeIndex = -1
+
+        for i in range(transition[0],transition[1]+1):
+            # Find the max diff
+            if frameDiff[i] > maxDiff:
+                maxDiff = frameDiff[i]
+                maxDiffIndex = i
+            # Or the no change frame -> usually Fade in black
+            if frameDiff[i] < noChangeThreshold:
+                noChangeIndex = i
         
-        if hsv[i]>hsv_th:
-            if i > cur_e_h and i > cur_s_h:
-                cur_s_h = i
-                k = i + ws
-            
-                if k > len(rgb):
-                    k = len(rgb)
-
-                for j in range(i,k):
-                    if hsv[j] > hsv_th and j > cur_e_h:
-                        cur_e_h = j
-          
-            if i == cur_e_h:
-                e = False
-                k = i + ws
-                if k > len(rgb):
-                    k = len(rgb)
-                
-                for j in range(i,k):
-                    if hsv[j] > hsv_th and j > cur_e_h:
-                        e = True
-                        cur_e_h = j
-
-                if not e:
-                    shot_h.append((cur_s_h,cur_e_h))
-         
-        if rgb[i]>rgb_th:
-            if i > cur_e_r and i > cur_s_r:
-                cur_s_r = i
-                k = i + ws
-            
-                if k > len(rgb):
-                    k = len(rgb)
-
-                for j in range(i,k):
-                    if rgb[j] > rgb_th and j > cur_e_r:
-                        cur_e_r = j
-          
-            if i == cur_e_r:
-                e = False
-                k = i + ws
-                if k > len(rgb):
-                    k = len(rgb)
-                
-                for j in range(i,k):
-                    if rgb[j] > rgb_th and j > cur_e_r:
-                        e = True
-                        cur_e_r = j
-
-                if not e:
-                    shot_r.append((cur_s_r,cur_e_r))
-         
-        if yiq[i]>yiq_th:
-            if i > cur_e_y and i > cur_s_y:
-                cur_s_y = i
-                k = i + ws
-            
-                if k > len(rgb):
-                    k = len(rgb)
-
-                for j in range(i,k):
-                    if yiq[j] > yiq_th and j > cur_e_y:
-                        cur_e_y = j
-          
-            if i == cur_e_y:
-                e = False
-                k = i + ws
-                if k > len(rgb):
-                    k = len(rgb)
-                
-                for j in range(i,k):
-                    if yiq[j] > yiq_th and j > cur_e_y:
-                        e = True
-                        cur_e_y = j
-
-                if not e:
-                    shot_y.append((cur_s_y,cur_e_y))
-         
-    lh = len(shot_h)
-    lr = len(shot_r)
-    ly = len(shot_y)
-
-    for i in range(0,max(lh,max(lr,ly))):
-        if i < lh:
-            print shot_h[i],'\t',
+        if noChangeIndex > 0:
+            boundaryIndex = noChangeIndex + 1
         else:
-            print "       ",'\t',
+            boundaryIndex = maxDiffIndex
 
-        if i < lr:
-            print shot_r[i],'\t',
-        else:
-            print "       ",'\t',
+        shotStart.append(boundaryIndex)
 
-        if i < ly:
-            print shot_y[i]
-        else:
-            print "       "
+    shotStart.append(len(frameID))
+
+    print ''
+    print 'Shot Boundaries'
+    for i in range(1,len(shotStart)-1):
+        print frameID[shotStart[i]]
+    print ''
+    print 'Shot:'
+    for i in range(0,len(shotStart)-1):
+        print 'Shot #%03d frame #%04d - #%04d' % (i+1,frameID[shotStart[i]],frameID[shotStart[i+1]-1])
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 5:
         print 'Usage:'
-        print 'python shot_detect.py diff_file_gen_by_histogram.py answer'
+        print 'python shot_detect.py frame_dir start_frame end_frame color_space (threshold)'
+        print 'e.g.'
+        print 'python shot_detect.py videos.hw01/01_frame 0 828 hsv'
+        print 'or'
+        print 'python shot_detect.py videos.hw01/01_frame 0 828 hsv 40000'
     else:
-        main(sys.argv[1],"")
+        main(sys.argv)
