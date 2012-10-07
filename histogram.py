@@ -42,7 +42,7 @@ def getFramesDifference(path,start,end,color_space='hsv',cache=False):
     frameDiff = []
     frameID   = []
 
-
+    # save the result
     cacheFilename = path+color_space+'_frameDiff'
     if cache:
         of = open(cacheFilename,'w')
@@ -70,9 +70,9 @@ def getFramesDifference(path,start,end,color_space='hsv',cache=False):
         dbgFilename = path+color_space+'_histogram'
         dbgf = open(dbfDBGFilename,'w')
 
-   
-    histo = []
-    last_histogram = None
+    
+    histo = []              # histogram of current image
+    last_histogram = None   # histogram of last image
 
     X,Y,Z = (18,3,3)    #default is H,S,V
     if color_space == 'rgb':
@@ -144,8 +144,10 @@ def getFramesDifference(path,start,end,color_space='hsv',cache=False):
                         b = int(b)
                         c = int(c)
 
+                        # build histogram
                         histo[a][b][c] = histo[a][b][c] + 1
 
+            # calculate frame difference
             diff = 0
             
             if debug:
@@ -160,12 +162,13 @@ def getFramesDifference(path,start,end,color_space='hsv',cache=False):
                             if debug:
                                 dbgf.write(','+str(histo[x][y][z]))
 
-                            # histogram -> last_histogram
+                            # copy histogram to last_histogram
                             last_histogram[x][y][z] = histo[x][y][z]
                             # clear histogram
                             histo[x][y][z] = 0
 
             else:
+                # copy histogram to last_histogram
                 last_histogram = copy.deepcopy(histo)
 
                 # clear histogram
@@ -197,9 +200,14 @@ def getFramesDifference(path,start,end,color_space='hsv',cache=False):
     return {'frameDiff':frameDiff,'frameID':frameID}
 
 if __name__ == '__main__':
-    if len(sys.argv) != 5:
-        print 'Usage: python histogram.py frame_dir 1st# last# color_space'
+    if len(sys.argv) < 5:
+        print 'Usage: python histogram.py frame_dir 1st# last# color_space (cache)'
         print 'e.g.'
         print 'python histogram.py videos.hw01/01_frame 0 828 hsv'
+        print 'or if you want to build cache file:'
+        print 'python histogram.py videos.hw01/01_frame 0 828 hsv cache'
     else:
-        getFramesDifference(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),sys.argv[4])
+        if len(sys.argv) > 5:
+            getFramesDifference(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),sys.argv[4],True)
+        else: 
+            getFramesDifference(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),sys.argv[4])

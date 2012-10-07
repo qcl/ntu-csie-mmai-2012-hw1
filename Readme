@@ -1,0 +1,36 @@
+MMAI HW#1
+
+R01922024
+Qing-Cheng Li
+
+qingcheng.li@qcl.tw / r01922024@csie.ntu.edu.tw
+
+**********************************************************************
+* How to run shot_detect program?                                    *
+**********************************************************************
+
+0.You need python and PIL
+
+1.
+$ python shot_detect.py videos.hw01/01_frame/ 0 828 [hsv|rgb|yiq]
+
+It will use default threshold and if no cache file, it will build it.
+
+hsv.diff.cache.zip is the cache for each video, color space is HSV.
+unzip it and put cache file (hsv_frameDiff) to the path like 
+videos.hw01/01_frame/ , then run 
+
+$ python shot_detect.py videos.hw01/01_frame/ 0 828 hsv
+
+it will read the cache file. If you want to force this program to 
+re-generate cache, just run
+
+$ python shot_detect.py videos.hw01/01_frame/ 0 828 hsv -c
+
+then it will re-generate a cache file.
+
+If you want to use your threshold, just run:
+
+$ python videos.hw01/01_frame/ 0 828 hsv -t [your threshold]
+
+
